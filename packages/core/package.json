@@ -1,0 +1,17 @@
+{
+  "name": "@paintitfwdorg/core",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "sst bind vitest",
+    "typecheck": "tsc -noEmit"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4",
+    "@types/node": "^24.1.0",
+    "sst": "^3.17.10"
+  },
+  "dependencies": {
+    "zod": "^4.0.10"
+  }
+}
