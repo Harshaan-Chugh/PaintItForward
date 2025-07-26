@@ -1,6 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { verifyGoogleIdToken } from "../utils/auth.js";
+import { createResponse, createErrorResponse } from "../utils/response.js";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -27,17 +28,10 @@ export const handler = async (
     });
   } catch (error: any) {
     console.error("Error listing hours:", error);
-    return createResponse(401, { error: "Unauthorized" });
+    if (error.message.includes('token') || error.message.includes('Invalid')) {
+      return createErrorResponse(401, "Unauthorized");
+    }
+    return createErrorResponse(500, "Internal server error");
   }
 };
 
-const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => ({
-  statusCode,
-  headers: { 
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS"
-  },
-  body: JSON.stringify(body)
-});

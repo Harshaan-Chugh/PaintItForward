@@ -20,15 +20,23 @@ export function PaintItForwardStack({ stack }: StackContext) {
       function: { 
         environment: { 
           TABLE_NAME: table.tableName,
-          GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || ""
+          GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+          ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
         } 
       } 
+    },
+    cors: {
+      allowCredentials: true,
+      allowHeaders: ["content-type", "authorization"],
+      allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
+      allowOrigins: ["*"]
     },
     routes: {
       "POST   /hours": "packages/api/src/handlers/createHour.handler",
       "GET    /hours": "packages/api/src/handlers/listHours.handler",
       "PATCH  /hours/{email}/{start_time}": "packages/api/src/handlers/updateHour.handler",
-      "GET    /admin/pending": "packages/api/src/handlers/listPending.handler"
+      "GET    /admin/pending": "packages/api/src/handlers/listPending.handler",
+      "PATCH  /admin/hours/{email}/{start_time}": "packages/api/src/handlers/adminUpdateHour.handler"
     }
   });
 

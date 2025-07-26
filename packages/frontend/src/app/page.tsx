@@ -15,6 +15,7 @@ export default function Home() {
                 <a href="#mission" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">Mission</a>
                 <a href="#impact" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">Impact</a>
                 <a href="#gallery" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">Gallery</a>
+                <Link href="/admin" className="text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium">Admin</Link>
                 <Link href="/portal" className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">
                   Log Hours
                 </Link>

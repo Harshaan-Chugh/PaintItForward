@@ -1,7 +1,6 @@
 'use client';
 
-import { useGoogleLogin, GoogleLogin } from '@react-oauth/google';
-import { useState } from 'react';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface LoginButtonProps {
   onSuccess: (credential: string) => void;

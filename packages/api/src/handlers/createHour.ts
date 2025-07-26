@@ -1,6 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { verifyGoogleIdToken } from "../utils/auth.js";
+import { createResponse, createErrorResponse } from "../utils/response.js";
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -16,18 +17,18 @@ export const handler = async (
 
     const { start_time, end_time, description } = body;
     if (!start_time || !end_time) {
-      return createResponse(400, { error: "Missing start_time or end_time" });
+      return createErrorResponse(400, "Missing start_time or end_time");
     }
 
     // Validate date format
     const startDate = new Date(start_time);
     const endDate = new Date(end_time);
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      return createResponse(400, { error: "Invalid date format" });
+      return createErrorResponse(400, "Invalid date format");
     }
 
     if (endDate <= startDate) {
-      return createResponse(400, { error: "End time must be after start time" });
+      return createErrorResponse(400, "End time must be after start time");
     }
 
     const item = {
@@ -48,17 +49,10 @@ export const handler = async (
     return createResponse(201, item);
   } catch (error: any) {
     console.error("Error creating hour entry:", error);
-    return createResponse(401, { error: "Unauthorized" });
+    if (error.message.includes('token') || error.message.includes('Invalid')) {
+      return createErrorResponse(401, "Unauthorized");
+    }
+    return createErrorResponse(500, "Internal server error");
   }
 };
 
-const createResponse = (statusCode: number, body: any): APIGatewayProxyResult => ({
-  statusCode,
-  headers: { 
-    "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type,Authorization",
-    "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS"
-  },
-  body: JSON.stringify(body)
-});

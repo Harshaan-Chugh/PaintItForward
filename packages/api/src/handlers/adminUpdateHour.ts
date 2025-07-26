@@ -7,13 +7,21 @@ import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.TABLE_NAME!;
 
+// Simple admin check - in production, use a proper admin management system
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim());
+
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   try {
     const authHeader = event.headers?.authorization || "";
-    const { email } = await verifyGoogleIdToken(authHeader);
+    const { email: adminEmail } = await verifyGoogleIdToken(authHeader);
     
+    // Check if user is admin
+    if (!ADMIN_EMAILS.includes(adminEmail)) {
+      return createErrorResponse(403, "Admin access required");
+    }
+
     const pathEmail = event.pathParameters?.email;
     const startTime = event.pathParameters?.start_time;
     
@@ -21,16 +29,11 @@ export const handler = async (
       return createErrorResponse(400, "Missing email or start_time in path");
     }
 
-    // Only allow users to update their own records
-    if (email !== decodeURIComponent(pathEmail)) {
-      return createErrorResponse(403, "Cannot update other users' records");
-    }
-
     // Check if record exists
     const existing = await ddb.send(new GetCommand({
       TableName: TABLE_NAME,
       Key: {
-        email: pathEmail,
+        email: decodeURIComponent(pathEmail),
         start_time: decodeURIComponent(startTime)
       }
     }));
@@ -39,43 +42,34 @@ export const handler = async (
       return createErrorResponse(404, "Hour entry not found");
     }
 
-    // Only allow updates to pending entries
-    if (existing.Item.status !== "pending") {
-      return createErrorResponse(400, "Can only update pending entries");
-    }
-
     const body = JSON.parse(event.body || "{}");
-    const { end_time, description } = body;
+    const { status } = body;
 
-    const updateExpression = [];
-    const expressionAttributeValues: any = {
-      ":updated_at": new Date().toISOString()
-    };
-
-    if (end_time) {
-      updateExpression.push("end_time = :end_time");
-      expressionAttributeValues[":end_time"] = end_time;
+    if (!status || !["pending", "approved", "rejected"].includes(status)) {
+      return createErrorResponse(400, "Invalid status. Must be: pending, approved, or rejected");
     }
-
-    if (description !== undefined) {
-      updateExpression.push("description = :description");
-      expressionAttributeValues[":description"] = description;
-    }
-
-    updateExpression.push("updated_at = :updated_at");
 
     const result = await ddb.send(new UpdateCommand({
       TableName: TABLE_NAME,
       Key: {
-        email: pathEmail,
+        email: decodeURIComponent(pathEmail),
         start_time: decodeURIComponent(startTime)
       },
-      UpdateExpression: `SET ${updateExpression.join(", ")}`,
-      ExpressionAttributeValues: expressionAttributeValues,
+      UpdateExpression: "SET #status = :status, updated_at = :updated_at",
+      ExpressionAttributeNames: {
+        "#status": "status"
+      },
+      ExpressionAttributeValues: {
+        ":status": status,
+        ":updated_at": new Date().toISOString()
+      },
       ReturnValues: "ALL_NEW"
     }));
 
-    return createResponse(200, result.Attributes);
+    return createResponse(200, {
+      message: `Hour entry ${status} successfully`,
+      item: result.Attributes
+    });
   } catch (error: any) {
     console.error("Error updating hour entry:", error);
     if (error.message.includes('token') || error.message.includes('Invalid')) {
