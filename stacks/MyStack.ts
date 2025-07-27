@@ -16,7 +16,6 @@ const table = new sst.aws.Dynamo("HoursTable", {
 // API Gateway with Lambda functions
 const api = new sst.aws.ApiGatewayV2("Api", {
   cors: {
-    allowCredentials: true,
     allowHeaders: ["content-type", "authorization"],
     allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
     allowOrigins: ["*"]
@@ -40,6 +39,14 @@ api.route("GET /hours", {
     TABLE_NAME: table.name,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
     ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
+  },
+  permissions: [table]
+});
+
+api.route("GET /hours/total", {
+  handler: "packages/api/src/handlers/getTotalHours.handler",
+  environment: {
+    TABLE_NAME: table.name
   },
   permissions: [table]
 });

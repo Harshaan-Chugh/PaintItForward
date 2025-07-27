@@ -24,3 +24,49 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Slow gradient animation cycling through all pastel colors */
+@keyframes gradient-x {
+  0% {
+    background-position: 0% 50%;
+  }
+  20% {
+    background-position: 100% 50%;
+  }
+  40% {
+    background-position: 0% 100%;
+  }
+  60% {
+    background-position: 100% 0%;
+  }
+  80% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 45s ease infinite;
+}
+
+.bg-gradient-slow {
+  background: linear-gradient(
+    45deg,
+    #e8749f, /* even darker pastel pink */
+    #7aa3e8, /* even darker pastel blue */
+    #85cc85, /* even darker pastel green */
+    #f0be75, /* even darker pastel orange */
+    #cc99ff, /* even darker pastel purple */
+    #ffb399, /* even darker pastel peach */
+    #8fdbeb, /* even darker pastel cyan */
+    #ff7fc7, /* even darker pastel magenta */
+    #b5b575, /* even darker pastel lime */
+    #e8749f  /* back to even darker pastel pink */
+  );
+  background-size: 400% 400%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

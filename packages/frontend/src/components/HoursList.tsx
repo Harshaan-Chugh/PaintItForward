@@ -133,15 +133,15 @@ export default function HoursList({ token, refreshTrigger }: HoursListProps) {
           ))}
           
           <div className="border-t pt-4 mt-6">
-            <div className="text-lg font-semibold text-gray-900">
-              Total Hours: {hours.reduce((total, hour) => {
+            <div className="text-lg font-bold text-gray-900">
+              Approved Hours: {hours.filter(h => h.status === 'approved').reduce((total, hour) => {
                 return total + parseFloat(calculateHours(hour.start_time, hour.end_time));
               }, 0).toFixed(1)}
             </div>
             <div className="text-sm text-gray-600">
-              Approved: {hours.filter(h => h.status === 'approved').reduce((total, hour) => {
+              Pending Hours: {hours.filter(h => h.status === 'pending').reduce((total, hour) => {
                 return total + parseFloat(calculateHours(hour.start_time, hour.end_time));
-              }, 0).toFixed(1)} hours
+              }, 0).toFixed(1)}
             </div>
           </div>
         </div>
