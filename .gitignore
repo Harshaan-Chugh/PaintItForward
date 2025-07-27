@@ -1,15 +1,54 @@
 # dependencies
 node_modules
+packages/*/node_modules
 
 # sst
 .sst
 .build
+.claude\settings.local.json
 
 # opennext
 .open-next
 
-# misc
-.DS_Store
+# Next.js
+.next/
+out/
+next-env.d.ts
 
-# local env files
+# Environment files (CRITICAL - contains sensitive data)
+.env
 .env*.local
+.env.*.local
+
+# IDE and tool files
+.vscode/
+.idea/
+.claude/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Package manager files
+.pnpm-debug.log*
