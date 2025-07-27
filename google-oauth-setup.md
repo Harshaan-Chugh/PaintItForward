@@ -37,7 +37,7 @@ https://your-production-domain.com
 ```bash
 # .env (root)
 GOOGLE_CLIENT_ID=351616911983-o8247sq5qaaq8ioles657e5t8nt12bll.apps.googleusercontent.com
-ADMIN_EMAILS=your_email@gmail.com
+ADMIN_EMAILS=harshaan.chugh@gmail.com
 
 # .env.local (root) 
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=351616911983-o8247sq5qaaq8ioles657e5t8nt12bll.apps.googleusercontent.com

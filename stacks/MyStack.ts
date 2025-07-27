@@ -1,62 +1,95 @@
-import { StackContext, Table, Api, StaticSite } from "sst/constructs";
+/// <reference path="../.sst/platform/config.d.ts" />
 
-export function PaintItForwardStack({ stack }: StackContext) {
-  // DynamoDB table for volunteer hours tracking
-  const table = new Table(stack, "HoursTable", {
-    fields: {
-      email: "string",
-      start_time: "string",
-      status: "string"
-    },
-    primaryIndex: { partitionKey: "email", sortKey: "start_time" },
-    globalIndexes: {
-      statusIndex: { partitionKey: "status", sortKey: "start_time" }
-    }
-  });
+// DynamoDB table for volunteer hours tracking
+const table = new sst.aws.Dynamo("HoursTable", {
+  fields: {
+    email: "string",
+    start_time: "string",
+    status: "string"
+  },
+  primaryIndex: { hashKey: "email", rangeKey: "start_time" },
+  globalIndexes: {
+    statusIndex: { hashKey: "status", rangeKey: "start_time" }
+  }
+});
 
-  // API Gateway with Lambda functions
-  const api = new Api(stack, "Api", {
-    defaults: { 
-      function: { 
-        environment: { 
-          TABLE_NAME: table.tableName,
-          GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
-          ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
-        } 
-      } 
-    },
-    cors: {
-      allowCredentials: true,
-      allowHeaders: ["content-type", "authorization"],
-      allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
-      allowOrigins: ["*"]
-    },
-    routes: {
-      "POST   /hours": "packages/api/src/handlers/createHour.handler",
-      "GET    /hours": "packages/api/src/handlers/listHours.handler",
-      "PATCH  /hours/{email}/{start_time}": "packages/api/src/handlers/updateHour.handler",
-      "GET    /admin/pending": "packages/api/src/handlers/listPending.handler",
-      "PATCH  /admin/hours/{email}/{start_time}": "packages/api/src/handlers/adminUpdateHour.handler"
-    }
-  });
+// API Gateway with Lambda functions
+const api = new sst.aws.ApiGatewayV2("Api", {
+  cors: {
+    allowCredentials: true,
+    allowHeaders: ["content-type", "authorization"],
+    allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
+    allowOrigins: ["*"]
+  }
+});
 
-  // Grant table permissions to the API
-  table.grantReadWriteData(api);
+// Add routes with environment variables and permissions
+api.route("POST /hours", {
+  handler: "packages/api/src/handlers/createHour.handler",
+  environment: {
+    TABLE_NAME: table.name,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+    ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
+  },
+  permissions: [table]
+});
 
-  // Frontend static site
-  const site = new StaticSite(stack, "Site", {
-    path: "packages/frontend",
-    buildOutput: "out",
-    buildCommand: "npm run build",
-    environment: {
-      NEXT_PUBLIC_API_URL: api.url,
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || ""
-    }
-  });
+api.route("GET /hours", {
+  handler: "packages/api/src/handlers/listHours.handler", 
+  environment: {
+    TABLE_NAME: table.name,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+    ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
+  },
+  permissions: [table]
+});
 
-  stack.addOutputs({
-    ApiUrl: api.url,
-    SiteUrl: site.url,
-    TableName: table.tableName
-  });
-}
+api.route("PATCH /hours/{email}/{start_time}", {
+  handler: "packages/api/src/handlers/updateHour.handler",
+  environment: {
+    TABLE_NAME: table.name,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+    ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
+  },
+  permissions: [table]
+});
+
+api.route("GET /admin/pending", {
+  handler: "packages/api/src/handlers/listPending.handler",
+  environment: {
+    TABLE_NAME: table.name,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+    ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
+  },
+  permissions: [table]
+});
+
+api.route("PATCH /admin/hours/{email}/{start_time}", {
+  handler: "packages/api/src/handlers/adminUpdateHour.handler",
+  environment: {
+    TABLE_NAME: table.name,
+    GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+    ADMIN_EMAILS: process.env.ADMIN_EMAILS || ""
+  },
+  permissions: [table]
+});
+
+// Frontend static site
+const site = new sst.aws.StaticSite("Site", {
+  build: {
+    command: "npm run build",
+    output: "out"
+  },
+  path: "packages/frontend",
+  environment: {
+    NEXT_PUBLIC_API_URL: api.url,
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || ""
+  }
+});
+
+// Export outputs
+export const outputs = {
+  api: api.url,
+  site: site.url,
+  table: table.name
+};

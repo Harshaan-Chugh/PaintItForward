@@ -22,10 +22,10 @@ Your Google Console is configured with:
 
 ## Final Setup Steps
 
-### 1. Add Admin Email
-Edit `.env` and replace with your actual Gmail:
+### 1. Admin Email ✅ (Already Configured)
+Admin email is set to:
 ```bash
-ADMIN_EMAILS=your_actual_email@gmail.com
+ADMIN_EMAILS=harshaan.chugh@gmail.com
 ```
 
 ### 2. Add Test Users in Google Console
@@ -33,7 +33,7 @@ ADMIN_EMAILS=your_actual_email@gmail.com
 2. **APIs & Services** → **OAuth consent screen**
 3. Scroll to **Test users**
 4. Click **"Add Users"**
-5. Add your Gmail address (same as admin email)
+5. Add `harshaan.chugh@gmail.com`
 
 ### 3. Ready to Test!
 
@@ -54,11 +54,11 @@ cd packages/frontend && npm run dev
 1. Click "Log Hours" → goes to `/portal`
 2. Click Google Sign-In button
 3. Should redirect to Google OAuth consent screen
-4. Sign in with your Gmail (the one you added as test user)
+4. Sign in with `harshaan.chugh@gmail.com`
 5. Should redirect back to your app with user logged in
 
-### 5. Test Admin Functions
-1. Make sure your email is in `ADMIN_EMAILS` in `.env`
+### 5. Test Admin Functions ✅
+1. Admin email is already configured (`harshaan.chugh@gmail.com`)
 2. Sign in to the portal
 3. Visit `/admin` to see admin dashboard
 4. Create some test volunteer hours

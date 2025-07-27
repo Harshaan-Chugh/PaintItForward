@@ -1,14 +1,14 @@
-import { SSTConfig } from "sst";
-import { PaintItForwardStack } from "./stacks/MyStack";
+/// <reference path="./.sst/platform/config.d.ts" />
 
-export default {
-  config(_input) {
+export default $config({
+  app(input) {
     return {
       name: "paintitforward",
-      region: "us-east-1",
+      removal: input?.stage === "production" ? "retain" : "remove",
+      home: "aws",
     };
   },
-  stacks(app) {
-    app.stack(PaintItForwardStack);
-  }
-} satisfies SSTConfig;
+  async run() {
+    await import("./stacks/MyStack");
+  },
+});
