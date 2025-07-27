@@ -29,8 +29,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-xl">P</span>
+              <div className="w-10 h-10 rounded-xl mr-3 overflow-hidden">
+                <img src="/logo.png" alt="Paint It Forward Logo" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Paint It Forward
@@ -200,8 +200,8 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center mb-6">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
-                  <span className="text-white font-bold text-xl">P</span>
+                <div className="w-10 h-10 rounded-xl mr-3 overflow-hidden">
+                  <img src="/logo.png" alt="Paint It Forward Logo" className="w-full h-full object-cover" />
                 </div>
                 <h4 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   Paint It Forward
