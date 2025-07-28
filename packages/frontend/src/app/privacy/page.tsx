@@ -158,7 +158,7 @@ export default function Privacy() {
                     <h3 className="text-xl font-bold text-gray-900 mb-4">Questions About This Policy?</h3>
                     <p className="text-gray-600 mb-6">
                       If you have any questions about this Privacy Policy or how we handle your data, 
-                      please don't hesitate to reach out to us.
+                      please don&apos;t hesitate to reach out to us.
                     </p>
                     <Link 
                       href="/contact" 

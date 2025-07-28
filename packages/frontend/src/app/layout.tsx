@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Paint It Forward - Volunteer Hours Tracking",
   description: "Track your volunteer hours for Paint It Forward community service projects",
+  icons: {
+    icon: "/favicon.ico?v=2",
+  },
 };
 
 export default function RootLayout({

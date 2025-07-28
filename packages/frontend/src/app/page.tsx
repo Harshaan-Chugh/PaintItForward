@@ -137,7 +137,7 @@ export default function Home() {
                 <span className="text-3xl">🤝</span>
               </div>
               <h4 className="text-xl font-semibold mb-4 text-gray-950">Serve Seniors</h4>
-              <p className="text-gray-800 leading-relaxed">Donate artwork to retirement communities and brighten seniors' everyday spaces.</p>
+              <p className="text-gray-800 leading-relaxed">Donate artwork to retirement communities and brighten seniors&apos; everyday spaces.</p>
             </div>
             <div className="group text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
               <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
@@ -213,7 +213,7 @@ export default function Home() {
                   Paint It Forward
                 </h4>
               </div>
-              <p className="text-gray-800 mb-6 max-w-md">Brightening seniors' lives, one artwork at a time. Join our mission to create and donate beautiful art to retirement communities.</p>
+              <p className="text-gray-800 mb-6 max-w-md">Brightening seniors&apos; lives, one artwork at a time. Join our mission to create and donate beautiful art to retirement communities.</p>
               <div>
                 <a 
                   href="https://www.instagram.com/mhs_paintitforward/" 
