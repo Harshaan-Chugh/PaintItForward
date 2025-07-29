@@ -161,7 +161,7 @@ export default function Home() {
           </div>
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center p-6 rounded-2xl bg-white/90 backdrop-blur-lg border border-gray-200">
-              <div className="text-5xl font-bold bg-gradient-to-r from-blue-300 to-blue-200 bg-clip-text text-transparent mb-2">342</div>
+              <div className="text-5xl font-bold bg-gradient-to-r from-blue-300 to-blue-200 bg-clip-text text-transparent mb-2">20+</div>
               <div className="text-gray-700 text-lg">Artworks Created</div>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/90 backdrop-blur-lg border border-gray-200">
@@ -175,7 +175,7 @@ export default function Home() {
               <div className="text-gray-700 text-lg">Communities Served</div>
             </div>
             <div className="text-center p-6 rounded-2xl bg-white/90 backdrop-blur-lg border border-gray-200">
-              <div className="text-5xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent mb-2">2,850</div>
+              <div className="text-5xl font-bold bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent mb-2">25+</div>
               <div className="text-gray-700 text-lg">Seniors Served</div>
             </div>
           </div>
