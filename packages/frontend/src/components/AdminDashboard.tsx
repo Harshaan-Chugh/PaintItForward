@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 
 interface PendingHour {
-  email: string;
+  user_email: string;
+  user_name?: string;
   start_time: string;
   end_time: string;
+  hours?: number;
   status: 'pending' | 'approved' | 'rejected';
   description: string;
   created_at: string;
@@ -100,7 +102,7 @@ export default function AdminDashboard({ token }: AdminDashboardProps) {
       if (response.ok) {
         // Remove from pending list
         setPendingHours(prev => prev.filter(hour => 
-          !(hour.email === email && hour.start_time === startTime)
+          !(hour.user_email === email && hour.start_time === startTime)
         ));
         setError(''); // Clear any previous errors
       } else {
@@ -296,7 +298,7 @@ export default function AdminDashboard({ token }: AdminDashboardProps) {
         ) : (
         <div className="space-y-4">
           {pendingHours.map((hour, index) => {
-            const key = `${hour.email}-${hour.start_time}`;
+            const key = `${hour.user_email}-${hour.start_time}`;
             const isUpdating = updating === key;
             
             return (
@@ -304,7 +306,7 @@ export default function AdminDashboard({ token }: AdminDashboardProps) {
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
                     <div className="font-medium text-gray-900 mb-1">
-                      {hour.email}
+                      {hour.user_email}
                     </div>
                     <div className="text-sm text-gray-600">
                       {formatDateTime(hour.start_time)} - {formatDateTime(hour.end_time)}
@@ -315,14 +317,14 @@ export default function AdminDashboard({ token }: AdminDashboardProps) {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => updateHourStatus(hour.email, hour.start_time, 'approved')}
+                      onClick={() => updateHourStatus(hour.user_email, hour.start_time, 'approved')}
                       disabled={isUpdating}
                       className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 disabled:bg-gray-400"
                     >
                       {isUpdating ? '...' : 'Approve'}
                     </button>
                     <button
-                      onClick={() => updateHourStatus(hour.email, hour.start_time, 'rejected')}
+                      onClick={() => updateHourStatus(hour.user_email, hour.start_time, 'rejected')}
                       disabled={isUpdating}
                       className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 disabled:bg-gray-400"
                     >

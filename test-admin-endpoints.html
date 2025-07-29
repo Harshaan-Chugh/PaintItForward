@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Endpoints Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Admin Endpoints Test</h1>
+    <p>Click buttons to test each admin endpoint:</p>
+    
+    <button onclick="testPending()">Test /admin/pending</button>
+    <button onclick="testAll()">Test /admin/all</button>
+    <button onclick="testExport()">Test /admin/export</button>
+    <button onclick="testApprove()">Test /admin/approve</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const API_URL = 'https://5ikdmjfw3g.execute-api.us-west-1.amazonaws.com';
+        const TOKEN = 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImRkNTMwMTIwNGZjMWQ2YTBkNjhjNzgzYTM1Y2M5YzEwYjI1ZTFmNGEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzNTE2MTY5MTE5ODMtbzgyNDdzcTVxYWFxOGlvbGVzNjU3ZTV0OG50MTJibGwuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzNTE2MTY5MTE5ODMtbzgyNDdzcTVxYWFxOGlvbGVzNjU3ZTV0OG50MTJibGwuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDIzMzE0OTI5MjQwNzg0Mjg0MTkiLCJlbWFpbCI6ImhhcnNoYWFuLmNodWdoQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYmYiOjE3NTM4MTYyMjgsIm5hbWUiOiJIYXJzaGFhbiBDaHVnaCIsInBpY3R1cmUiOiJodHRwczovL2xoMy5nb29nbGV1c2VyY29udGVudC5jb20vYS9BQ2c4b2NMMmd1c3g3UmlobzlKa3JpdGdGRndFZDdKZFNEcUtfdVVtS3pVUnhJdnh3THdZQ1NBST1zOTYtYyIsImdpdmVuX25hbWUiOiJIYXJzaGFhbiIsImZhbWlseV9uYW1lIjoiQ2h1Z2giLCJpYXQiOjE3NTM4MTY1MjgsImV4cCI6MTc1MzgyMDEyOCwianRpIjoiODk5YmQ5NjhlMTQ0MTFhMDJiOGE2MjkwNGUwMzUyNjUwNTMwOGI3ZiJ9.E32pi6ryBNjCMhVpDTyhtNDBZamJRq3qJ_KuDJUkhVBor-NELslQTbc_GdaAxfTIPLM3X_KHAfSl-70RKQrkX2Fu3BCV8FA0rdHNHvzETTkq6Np0bTjyaSPU0h4Nnm6saLZO3dG643Mnli_dMmGc_oVLVWK7wwPV-zjaQwjvb2Rkcy4mtgxx0SpZ2S52LUt2HcOjkOE1rE7rUWm0HMzVFbH5eP3hkvoV4TGveBa4BeaBPHY-T3HcIfXMBP5z6-xUeD3H6Xixl-toMOLerLke4SS4ABAAwvyEbzpQBNGlMR11sWihq00u1CvqrQojNGGjsXygeWUmiaDSQH2-p2OJYg';
+
+        function addResult(endpoint, status, data) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${status}`;
+            div.innerHTML = `
+                <h3>${endpoint}</h3>
+                <p><strong>Status:</strong> ${status}</p>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        async function testPending() {
+            try {
+                const response = await fetch(`${API_URL}/admin/pending`, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                const data = await response.json();
+                addResult('/admin/pending', response.ok ? 'success' : 'error', data);
+            } catch (error) {
+                addResult('/admin/pending', 'error', { error: error.message });
+            }
+        }
+
+        async function testAll() {
+            try {
+                const response = await fetch(`${API_URL}/admin/all`, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                const data = await response.json();
+                addResult('/admin/all', response.ok ? 'success' : 'error', data);
+            } catch (error) {
+                addResult('/admin/all', 'error', { error: error.message });
+            }
+        }
+
+        async function testExport() {
+            try {
+                const response = await fetch(`${API_URL}/admin/export`, {
+                    headers: { 'Authorization': `Bearer ${TOKEN}` }
+                });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    addResult('/admin/export', 'success', { message: 'CSV download successful', size: blob.size });
+                } else {
+                    const data = await response.json();
+                    addResult('/admin/export', 'error', data);
+                }
+            } catch (error) {
+                addResult('/admin/export', 'error', { error: error.message });
+            }
+        }
+
+        async function testApprove() {
+            try {
+                const response = await fetch(`${API_URL}/admin/approve`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        start_time: '2025-07-29T10:00:00.000Z',
+                        status: 'approved'
+                    })
+                });
+                const data = await response.json();
+                addResult('/admin/approve', response.ok ? 'success' : 'error', data);
+            } catch (error) {
+                addResult('/admin/approve', 'error', { error: error.message });
+            }
+        }
+    </script>
+</body>
+</html>
