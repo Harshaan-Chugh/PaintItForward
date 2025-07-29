@@ -90,10 +90,10 @@ export default function Contact() {
                   <div className="bg-gray-200/80 backdrop-blur-sm rounded-xl p-4">
                     <h4 className="text-lg font-semibold text-gray-950 mb-2">Email Us</h4>
                     <a 
-                      href="mailto:Pc104861@student.musd.org" 
+                      href="mailto:pc104861@student.musd.org" 
                       className="text-blue-600 hover:text-blue-700 text-lg font-medium transition-colors"
                     >
-                      Pc104861@student.musd.org
+                      pc104861@student.musd.org
                     </a>
                   </div>
                 </div>

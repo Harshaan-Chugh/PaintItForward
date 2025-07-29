@@ -236,9 +236,6 @@ export default function Home() {
               <h5 className="text-lg font-semibold mb-4 text-gray-800">Support</h5>
               <div className="space-y-3">
                 <Link href="/contact" className="block text-gray-400 hover:text-gray-950 transition-colors">Contact</Link>
-                <Link href="/privacy" className="block text-gray-400 hover:text-gray-950 transition-colors">Privacy Policy</Link>
-                <Link href="/terms" className="block text-gray-400 hover:text-gray-950 transition-colors">Terms of Service</Link>
-                <Link href="/help" className="block text-gray-400 hover:text-gray-950 transition-colors">Help Center</Link>
               </div>
             </div>
           </div>

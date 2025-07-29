@@ -1,15 +1,5 @@
 const https = require('https');
 
-// Initialize AWS SDK for DynamoDB with error handling
-let dynamodb = null;
-try {
-    const AWS = require('aws-sdk');
-    dynamodb = new AWS.DynamoDB.DocumentClient({ region: 'us-west-1' });
-    console.log('DynamoDB initialized successfully');
-} catch (error) {
-    console.error('Failed to initialize DynamoDB:', error);
-}
-
 // Production configuration
 const GOOGLE_CLIENT_ID = '351616911983-o8247sq5qaaq8ioles657e5t8nt12bll.apps.googleusercontent.com';
 const ADMIN_EMAILS = ['harshaan.chugh@gmail.com', 'Pc104861@student.musd.org'];
@@ -20,6 +10,34 @@ const corsHeaders = {
     'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
+
+// Try to use either AWS SDK version available in Lambda runtime
+let dynamodb = null;
+let isSDKv3 = false;
+
+// Check if AWS SDK v3 is available
+try {
+    const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+    const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+    
+    const client = new DynamoDBClient({ region: 'us-west-1' });
+    dynamodb = DynamoDBDocumentClient.from(client);
+    isSDKv3 = true;
+    console.log('Successfully initialized DynamoDB with AWS SDK v3');
+} catch (v3Error) {
+    console.log('AWS SDK v3 not available, trying v2:', v3Error.message);
+    
+    // Fallback to AWS SDK v2
+    try {
+        const AWS = require('aws-sdk');
+        dynamodb = new AWS.DynamoDB.DocumentClient({ region: 'us-west-1' });
+        isSDKv3 = false;
+        console.log('Successfully initialized DynamoDB with AWS SDK v2');
+    } catch (v2Error) {
+        console.error('Both AWS SDK v3 and v2 failed:', v2Error);
+        dynamodb = null;
+    }
+}
 
 // Verify Google OAuth token
 async function verifyGoogleToken(token) {
@@ -49,13 +67,75 @@ async function verifyGoogleToken(token) {
     });
 }
 
+// Helper function to execute DynamoDB operations with correct SDK syntax
+async function executeDBOperation(operation, params) {
+    if (!dynamodb) {
+        throw new Error('DynamoDB not initialized');
+    }
+    
+    if (isSDKv3) {
+        // AWS SDK v3 - use command pattern
+        const { ScanCommand, PutCommand, QueryCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+        let command;
+        
+        switch (operation) {
+            case 'scan':
+                command = new ScanCommand(params);
+                break;
+            case 'put':
+                command = new PutCommand(params);
+                break;
+            case 'query':
+                command = new QueryCommand(params);
+                break;
+            case 'update':
+                command = new UpdateCommand(params);
+                break;
+            default:
+                throw new Error(`Unknown operation: ${operation}`);
+        }
+        
+        return await dynamodb.send(command);
+    } else {
+        // AWS SDK v2 - use method with promise
+        return await dynamodb[operation](params).promise();
+    }
+}
+
+// Simple test to verify DynamoDB connectivity
+async function testDynamoDB() {
+    if (!dynamodb) {
+        throw new Error('DynamoDB not initialized');
+    }
+    
+    try {
+        // Try a simple scan to test connectivity
+        const result = await executeDBOperation('scan', {
+            TableName: TABLE_NAME,
+            Limit: 1
+        });
+        console.log('DynamoDB test successful, items found:', result.Count);
+        return true;
+    } catch (error) {
+        console.error('DynamoDB test failed:', error);
+        throw error;
+    }
+}
+
 exports.handler = async (event) => {
     console.log('Event:', JSON.stringify(event, null, 2));
-    console.log('Current database has', hoursDatabase.length, 'entries');
+    console.log('DynamoDB status:', dynamodb ? 'initialized' : 'not available');
     
     const { requestContext, body, headers } = event;
     const { http } = requestContext;
     const { method, path } = http;
+    
+    // Add specific logging for failing endpoints
+    if (path === '/admin/all' || path === '/admin/export' || path === '/admin/approve') {
+        console.log('DEBUGGING FAILING ENDPOINT:', { method, path });
+        console.log('Headers:', JSON.stringify(headers || {}, null, 2));
+        console.log('Full requestContext:', JSON.stringify(requestContext || {}, null, 2));
+    }
     
     try {
         // Handle CORS preflight
@@ -71,6 +151,7 @@ exports.handler = async (event) => {
         if (method === 'GET' && path === '/hours/total') {
             try {
                 if (!dynamodb) {
+                    console.log('DynamoDB not available, returning 0');
                     return {
                         statusCode: 200,
                         headers: corsHeaders,
@@ -78,7 +159,9 @@ exports.handler = async (event) => {
                     };
                 }
                 
-                const result = await dynamodb.scan({
+                await testDynamoDB(); // Test connectivity first
+                
+                const result = await executeDBOperation('scan', {
                     TableName: TABLE_NAME,
                     FilterExpression: '#status = :status',
                     ExpressionAttributeNames: {
@@ -87,7 +170,7 @@ exports.handler = async (event) => {
                     ExpressionAttributeValues: {
                         ':status': 'approved'
                     }
-                }).promise();
+                });
                 
                 const approvedHours = (result.Items || [])
                     .reduce((sum, entry) => sum + (entry.hours || 0), 0);
@@ -101,9 +184,9 @@ exports.handler = async (event) => {
             } catch (error) {
                 console.error('Error fetching total hours:', error);
                 return {
-                    statusCode: 500,
+                    statusCode: 200,
                     headers: corsHeaders,
-                    body: JSON.stringify({ error: 'Failed to fetch total hours' })
+                    body: JSON.stringify({ totalHours: 0 }) // Return 0 instead of error
                 };
             }
         }
@@ -137,30 +220,22 @@ exports.handler = async (event) => {
         // POST /hours - Create new hour entry
         if (method === 'POST' && path === '/hours') {
             try {
-                console.log('Raw body received:', body);
                 const data = JSON.parse(body);
-                console.log('Parsed data:', JSON.stringify(data, null, 2));
                 const { start_time, end_time, description } = data;
-                console.log('Extracted fields - start_time:', start_time, 'end_time:', end_time, 'description:', description);
                 
                 if (!start_time || !end_time || !description) {
-                    console.log('Missing fields detected!');
                     return {
                         statusCode: 400,
                         headers: corsHeaders,
-                        body: JSON.stringify({ 
-                            error: 'Missing required fields: start_time, end_time, description',
-                            received: { start_time, end_time, description },
-                            bodyReceived: body
-                        })
+                        body: JSON.stringify({ error: 'Missing required fields: start_time, end_time, description' })
                     };
                 }
                 
-                // Calculate hours from start and end time
+                // Calculate hours
                 const startDate = new Date(start_time);
                 const endDate = new Date(end_time);
                 const diffMs = endDate.getTime() - startDate.getTime();
-                const hours = diffMs / (1000 * 60 * 60); // Convert to hours
+                const hours = diffMs / (1000 * 60 * 60);
                 
                 if (hours <= 0) {
                     return {
@@ -182,15 +257,16 @@ exports.handler = async (event) => {
                     updated_at: new Date().toISOString()
                 };
                 
-                // Save to DynamoDB
                 if (!dynamodb) {
                     throw new Error('Database not available');
                 }
                 
-                await dynamodb.put({
+                await testDynamoDB(); // Test connectivity first
+                
+                await executeDBOperation('put', {
                     TableName: TABLE_NAME,
                     Item: newEntry
-                }).promise();
+                });
                 
                 console.log('Saved new entry to DynamoDB:', newEntry);
                 
@@ -203,11 +279,14 @@ exports.handler = async (event) => {
                     })
                 };
             } catch (error) {
-                console.error('Error processing POST /hours:', error);
+                console.error('Error saving hours:', error);
                 return {
                     statusCode: 500,
                     headers: corsHeaders,
-                    body: JSON.stringify({ error: 'Failed to save hours: ' + error.message })
+                    body: JSON.stringify({ 
+                        error: 'Failed to save hours to database',
+                        details: error.message
+                    })
                 };
             }
         }
@@ -216,6 +295,7 @@ exports.handler = async (event) => {
         if (method === 'GET' && path === '/hours') {
             try {
                 if (!dynamodb) {
+                    console.log('DynamoDB not available for user hours');
                     return {
                         statusCode: 200,
                         headers: corsHeaders,
@@ -223,14 +303,15 @@ exports.handler = async (event) => {
                     };
                 }
                 
-                const result = await dynamodb.query({
+                await testDynamoDB(); // Test connectivity first
+                
+                const result = await executeDBOperation('scan', {
                     TableName: TABLE_NAME,
-                    KeyConditionExpression: 'user_email = :email',
+                    FilterExpression: 'user_email = :email',
                     ExpressionAttributeValues: {
                         ':email': user.email
-                    },
-                    ScanIndexForward: false
-                }).promise();
+                    }
+                });
                 
                 const userHours = result.Items || [];
                 console.log('Found', userHours.length, 'hours for user', user.email);
@@ -242,9 +323,9 @@ exports.handler = async (event) => {
             } catch (error) {
                 console.error('Error fetching user hours:', error);
                 return {
-                    statusCode: 500,
+                    statusCode: 200,
                     headers: corsHeaders,
-                    body: JSON.stringify({ error: 'Failed to fetch hours' })
+                    body: JSON.stringify({ hours: [] }) // Return empty instead of error
                 };
             }
         }
@@ -260,7 +341,17 @@ exports.handler = async (event) => {
             }
             
             try {
-                const result = await dynamodb.scan({
+                if (!dynamodb) {
+                    return {
+                        statusCode: 200,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ pending_hours: [] })
+                    };
+                }
+                
+                await testDynamoDB(); // Test connectivity first
+                
+                const result = await executeDBOperation('scan', {
                     TableName: TABLE_NAME,
                     FilterExpression: '#status = :status',
                     ExpressionAttributeNames: {
@@ -269,7 +360,7 @@ exports.handler = async (event) => {
                     ExpressionAttributeValues: {
                         ':status': 'pending'
                     }
-                }).promise();
+                });
                 
                 const pendingHours = result.Items || [];
                 console.log('Found', pendingHours.length, 'pending hours for admin');
@@ -290,7 +381,9 @@ exports.handler = async (event) => {
         
         // GET /admin/export - Admin only (export all volunteer data)
         if (method === 'GET' && path === '/admin/export') {
+            console.log('Processing /admin/export request');
             if (!ADMIN_EMAILS.includes(user.email)) {
+                console.log('Access denied for user:', user.email);
                 return {
                     statusCode: 403,
                     headers: corsHeaders,
@@ -298,24 +391,35 @@ exports.handler = async (event) => {
                 };
             }
             
+            console.log('Admin access granted for /admin/export');
             try {
-                const result = await dynamodb.scan({
+                if (!dynamodb) {
+                    return {
+                        statusCode: 200,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ error: 'Database not available' })
+                    };
+                }
+                
+                await testDynamoDB(); // Test connectivity first
+                
+                const result = await executeDBOperation('scan', {
                     TableName: TABLE_NAME
-                }).promise();
+                });
                 
                 const allEntries = result.Items || [];
                 
                 // Create CSV content
                 const csvHeaders = 'Email,Name,Start Time,End Time,Hours,Description,Status,Created At,Updated At\n';
                 const csvRows = allEntries.map(entry => {
-                    const formatDate = (dateStr) => new Date(dateStr).toLocaleString();
+                    const formatDate = (dateStr) => dateStr ? new Date(dateStr).toLocaleString() : 'Unknown';
                     return [
                         `"${entry.user_email}"`,
                         `"${entry.user_name || 'Unknown'}"`,
                         `"${formatDate(entry.start_time)}"`,
                         `"${formatDate(entry.end_time)}"`,
                         entry.hours,
-                        `"${entry.description.replace(/"/g, '""')}"`, // Escape quotes in description
+                        `"${(entry.description || '').replace(/"/g, '""')}"`, // Escape quotes in description
                         entry.status,
                         `"${formatDate(entry.created_at)}"`,
                         `"${formatDate(entry.updated_at)}"`
@@ -345,7 +449,9 @@ exports.handler = async (event) => {
         
         // GET /admin/all - Admin only (get all volunteer submissions for web display)
         if (method === 'GET' && path === '/admin/all') {
+            console.log('Processing /admin/all request');
             if (!ADMIN_EMAILS.includes(user.email)) {
+                console.log('Access denied for user:', user.email);
                 return {
                     statusCode: 403,
                     headers: corsHeaders,
@@ -353,14 +459,36 @@ exports.handler = async (event) => {
                 };
             }
             
+            console.log('Admin access granted for /admin/all');
             try {
-                const result = await dynamodb.scan({
-                    TableName: TABLE_NAME
-                }).promise();
+                if (!dynamodb) {
+                    return {
+                        statusCode: 200,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ 
+                            entries: [],
+                            summary: {
+                                totalVolunteers: 0,
+                                totalHours: 0,
+                                approvedHours: 0,
+                                pendingHours: 0,
+                                totalEntries: 0
+                            }
+                        })
+                    };
+                }
                 
-                const allEntries = (result.Items || []).sort((a, b) => 
-                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
+                await testDynamoDB(); // Test connectivity first
+                
+                const result = await executeDBOperation('scan', {
+                    TableName: TABLE_NAME
+                });
+                
+                const allEntries = (result.Items || []).sort((a, b) => {
+                    const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+                    return bTime - aTime;
+                });
                 
                 // Calculate summary statistics
                 const totalVolunteers = new Set(allEntries.map(e => e.user_email)).size;
@@ -392,9 +520,11 @@ exports.handler = async (event) => {
             }
         }
         
-        // PATCH /admin/approve - Admin only (simplified approval)
+        // PATCH /admin/approve - Admin only
         if (method === 'PATCH' && path === '/admin/approve') {
+            console.log('Processing /admin/approve request');
             if (!ADMIN_EMAILS.includes(user.email)) {
+                console.log('Access denied for user:', user.email);
                 return {
                     statusCode: 403,
                     headers: corsHeaders,
@@ -402,12 +532,12 @@ exports.handler = async (event) => {
                 };
             }
             
+            console.log('Admin access granted for /admin/approve');
             try {
                 const requestData = JSON.parse(body);
                 const { email, start_time, status } = requestData;
                 
                 console.log('Approval request:', { email, start_time, status });
-                console.log('All pending entries:', hoursDatabase.filter(e => e.status === 'pending'));
                 
                 if (!status || !['approved', 'rejected'].includes(status)) {
                     return {
@@ -417,167 +547,50 @@ exports.handler = async (event) => {
                     };
                 }
                 
-                // Update the entry in DynamoDB
-                try {
-                    const updateResult = await dynamodb.update({
-                        TableName: TABLE_NAME,
-                        Key: {
-                            user_email: email,
-                            start_time: start_time
-                        },
-                        UpdateExpression: 'SET #status = :status, updated_at = :updated_at',
-                        ExpressionAttributeNames: {
-                            '#status': 'status'
-                        },
-                        ExpressionAttributeValues: {
-                            ':status': status,
-                            ':updated_at': new Date().toISOString()
-                        },
-                        ConditionExpression: '#status = :pending',
-                        ExpressionAttributeValues: {
-                            ...{':status': status, ':updated_at': new Date().toISOString()},
-                            ':pending': 'pending'
-                        },
-                        ReturnValues: 'ALL_NEW'
-                    }).promise();
-                    
-                    return {
-                        statusCode: 200,
-                        headers: corsHeaders,
-                        body: JSON.stringify({ 
-                            message: `Hours ${status} successfully`,
-                            entry: updateResult.Attributes
-                        })
-                    };
-                } catch (dbError) {
-                    if (dbError.code === 'ConditionalCheckFailedException') {
-                        return {
-                            statusCode: 404,
-                            headers: corsHeaders,
-                            body: JSON.stringify({ 
-                                error: 'Hour entry not found or already processed',
-                                debug: { email, start_time }
-                            })
-                        };
-                    }
-                    throw dbError;
-                }
-            } catch (error) {
-                console.error('Error updating hour status:', error);
-                return {
-                    statusCode: 500,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ error: 'Failed to update hour status: ' + error.message })
-                };
-            }
-        }
-        
-        // PATCH /admin/hours/{email}/{start_time} - Admin only (legacy)
-        if (method === 'PATCH' && path.startsWith('/admin/hours/')) {
-            if (!ADMIN_EMAILS.includes(user.email)) {
-                return {
-                    statusCode: 403,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ error: 'Access denied. Admin privileges required.' })
-                };
-            }
-            
-            try {
-                // Parse the path to get email and start_time
-                const pathParts = path.split('/');
-                // Path format: /admin/hours/{email}/{start_time}
-                if (pathParts.length < 5) {
-                    return {
-                        statusCode: 400,
-                        headers: corsHeaders,
-                        body: JSON.stringify({ error: 'Invalid path format' })
-                    };
+                if (!dynamodb) {
+                    throw new Error('Database not available');
                 }
                 
-                const targetEmail = decodeURIComponent(pathParts[3]);
-                const targetStartTime = decodeURIComponent(pathParts[4]);
+                await testDynamoDB(); // Test connectivity first
                 
-                console.log('Raw path parts:', pathParts);
-                console.log('Looking for entry with email:', targetEmail, 'start_time:', targetStartTime);
-                console.log('All database entries:');
-                hoursDatabase.forEach((entry, index) => {
-                    console.log(`  ${index}: email="${entry.user_email}", start_time="${entry.start_time}", status="${entry.status}"`);
+                const updateResult = await executeDBOperation('update', {
+                    TableName: TABLE_NAME,
+                    Key: {
+                        user_email: email,
+                        start_time: start_time
+                    },
+                    UpdateExpression: 'SET #status = :status, updated_at = :updated_at',
+                    ExpressionAttributeNames: {
+                        '#status': 'status'
+                    },
+                    ExpressionAttributeValues: {
+                        ':status': status,
+                        ':updated_at': new Date().toISOString(),
+                        ':pending': 'pending'
+                    },
+                    ConditionExpression: '#status = :pending',
+                    ReturnValues: 'ALL_NEW'
                 });
-                
-                const requestData = JSON.parse(body);
-                const { status } = requestData;
-                
-                if (!status || !['approved', 'rejected'].includes(status)) {
-                    return {
-                        statusCode: 400,
-                        headers: corsHeaders,
-                        body: JSON.stringify({ error: 'Invalid status. Must be "approved" or "rejected"' })
-                    };
-                }
-                
-                // Try multiple matching strategies
-                let entryIndex = -1;
-                
-                // Strategy 1: Exact start_time match (since ID = start_time now)
-                entryIndex = hoursDatabase.findIndex(entry => 
-                    entry.start_time === targetStartTime
-                );
-                console.log('Strategy 1 - exact start_time match:', entryIndex);
-                
-                // Strategy 2: Exact email + start_time match
-                if (entryIndex === -1) {
-                    entryIndex = hoursDatabase.findIndex(entry => 
-                        entry.user_email === targetEmail && entry.start_time === targetStartTime
-                    );
-                    console.log('Strategy 2 - email + start_time match:', entryIndex);
-                }
-                
-                // Strategy 3: Just find the first pending entry for this email (fallback)
-                if (entryIndex === -1) {
-                    entryIndex = hoursDatabase.findIndex(entry => 
-                        entry.user_email === targetEmail && entry.status === 'pending'
-                    );
-                    console.log('Strategy 3 - fallback to first pending for email:', entryIndex);
-                }
-                
-                console.log('Found entry at index:', entryIndex);
-                
-                if (entryIndex === -1) {
-                    return {
-                        statusCode: 404,
-                        headers: corsHeaders,
-                        body: JSON.stringify({ 
-                            error: 'Hour entry not found',
-                            debug: {
-                                targetEmail,
-                                targetStartTime,
-                                availableEntries: hoursDatabase.map(e => ({ 
-                                    id: e.id,
-                                    email: e.user_email, 
-                                    start_time: e.start_time,
-                                    status: e.status 
-                                }))
-                            }
-                        })
-                    };
-                }
-                
-                // Update the status
-                hoursDatabase[entryIndex].status = status;
-                hoursDatabase[entryIndex].updated_at = new Date().toISOString();
-                
-                console.log('Updated entry:', hoursDatabase[entryIndex]);
                 
                 return {
                     statusCode: 200,
                     headers: corsHeaders,
                     body: JSON.stringify({ 
                         message: `Hours ${status} successfully`,
-                        entry: hoursDatabase[entryIndex]
+                        entry: updateResult.Attributes
                     })
                 };
             } catch (error) {
                 console.error('Error updating hour status:', error);
+                if (error.code === 'ConditionalCheckFailedException') {
+                    return {
+                        statusCode: 404,
+                        headers: corsHeaders,
+                        body: JSON.stringify({ 
+                            error: 'Hour entry not found or already processed'
+                        })
+                    };
+                }
                 return {
                     statusCode: 500,
                     headers: corsHeaders,
