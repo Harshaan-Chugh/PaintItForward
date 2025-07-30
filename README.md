@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Paint It Forward is a nonprofit initiative that brings joy to seniors through art donations. This system streamlines volunteer hour tracking, admin approval workflows, and impact reporting.
+Paint It Forward is a nonprofit initiative that brings joy to seniors by driving art painting initiatives. This website streamlines signups as well as volunteer hour tracking, admin approval workflows, and impact reporting.
 
 
 ## Architecture
