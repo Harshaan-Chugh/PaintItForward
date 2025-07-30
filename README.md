@@ -162,7 +162,7 @@ zip lambda-dynamo.zip lambda-dynamo.js
 aws lambda update-function-code --function-name paintitforward-hours --zip-file fileb://lambda-dynamo.zip
 ```
 
-## Key Features
+## Features
 
 ### For Volunteers
 - **Google OAuth Login** - Secure authentication
@@ -177,6 +177,6 @@ aws lambda update-function-code --function-name paintitforward-hours --zip-file 
 - **Bulk Operations** - Efficiently manage multiple submissions
 
 ### For Public
-- **Impact Metrics** - Live total volunteer hours display
-- **Mission Information** - Learn about Paint It Forward
-- **Contact Forms** - Get involved or ask questions
+- **Impact Metrics**
+- **Mission Information**
+- **Contact Forms**
