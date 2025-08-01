@@ -32,8 +32,8 @@ export default function About() {
             <h3 className="text-2xl font-bold text-white mb-6">Our Story</h3>
             <p className="text-white/80 leading-relaxed">
               What started as a small neighborhood initiative has grown into a movement spanning multiple communities. 
-              Our volunteers have donated thousands of hours to help families, schools, and community centers receive 
-              the makeovers they deserve. Every project we complete strengthens the bonds within our community and 
+              Our volunteers have dedicated thousands of hours to creating art with seniors in retirement communities. 
+              Every project we complete strengthens the bonds between generations and 
               creates ripple effects of positivity that last for years to come.
             </p>
           </div>

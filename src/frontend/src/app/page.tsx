@@ -7,7 +7,7 @@ export default function Home() {
   const messages = [
     "🎨 Transform communities through art",
     "🏡 Brightening seniors' days with artwork", 
-    "💝 Donating art to retirement communities",
+    "🎭 Collaborative art sessions with seniors",
     "✨ Creating joy through artistic expression",
     "🤝 Connecting generations through creativity",
     "🌟 Spreading happiness with handmade art"
@@ -98,8 +98,8 @@ export default function Home() {
             <span className="text-black">Together</span>
           </h2>
           <p className="text-xl text-gray-800 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Join our mission to create beautiful artwork and donate it to seniors and retirement communities. 
-            Track your volunteer hours, see your impact, and bring joy to those who need it most.
+            Join our mission to create beautiful artwork with seniors and retirement communities. 
+            Track your volunteer hours, see your impact, and bring joy through collaborative artistic expression.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/portal" className="bg-gradient-to-r from-blue-400 to-blue-300 text-gray-950 px-8 py-4 rounded-full text-lg font-semibold hover:from-blue-300 hover:to-blue-200 transition-all shadow-xl transform hover:scale-105">
@@ -120,7 +120,7 @@ export default function Home() {
               Our Mission
             </h3>
             <p className="text-xl text-gray-800 max-w-4xl mx-auto leading-relaxed">
-              Paint It Forward brings volunteers together to create beautiful artwork and donate it to 
+              Paint It Forward brings volunteers together to create beautiful artwork with 
               seniors and retirement communities, spreading joy and meaningful connections across generations.
             </p>
           </div>
@@ -137,7 +137,7 @@ export default function Home() {
                 <span className="text-3xl">🤝</span>
               </div>
               <h4 className="text-xl font-semibold mb-4 text-gray-950">Serve Seniors</h4>
-              <p className="text-gray-800 leading-relaxed">Donate artwork to retirement communities and brighten seniors&apos; everyday spaces.</p>
+              <p className="text-gray-800 leading-relaxed">Create artwork with seniors in retirement communities and brighten their everyday spaces.</p>
             </div>
             <div className="group text-center p-8 rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
               <div className="w-20 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
@@ -213,7 +213,7 @@ export default function Home() {
                   Paint It Forward
                 </h4>
               </div>
-              <p className="text-gray-800 mb-6 max-w-md">Brightening seniors&apos; lives, one artwork at a time. Join our mission to create and donate beautiful art to retirement communities.</p>
+              <p className="text-gray-800 mb-6 max-w-md">Brightening seniors&apos; lives, one artwork at a time. Join our mission to create beautiful art with retirement communities.</p>
               <div>
                 <a 
                   href="https://www.instagram.com/mhs_paintitforward/" 
